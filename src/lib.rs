@@ -419,8 +419,10 @@ impl PxeSocket {
                                 return None;
                             }
                             Err(Error::TftpEndOfFile) => {
-                                log::info!("Changing to tftp done state");
-                                self.state = PxeStates::Tftp(TftpStates::Done);
+                                // once we reach the end of the file, the pxe environment might not send anything else back to us
+                                // so reset back to Discover to handle additional discovers
+                                log::info!("Tftp Done. Resetting state to PxeStates::Discover");
+                                self.state = PxeStates::Discover;
                                 return None;
                             }
                             Err(e) => panic!("Error: {}", e),
@@ -429,6 +431,8 @@ impl PxeSocket {
                     TftpStates::Error => todo!(),
                     TftpStates::Done => {
                         log::info!("TFTP Done");
+                        // reset state so we can process additional discover requests
+                        self.state = States::Discover;
                         return None;
                     }
                 }
